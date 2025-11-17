@@ -1,0 +1,60 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and customize for your environment
+
+environment = "dev"
+location    = "eastus"
+
+# Management Group Configuration
+root_management_group_name = "My Organization"
+root_management_group_id   = "myorg-root"
+
+# Networking Configuration
+hub_vnet_address_space = ["10.0.0.0/16"]
+
+spoke_vnets = {
+  "production" = {
+    name          = "vnet-production"
+    address_space = ["10.1.0.0/16"]
+    subnets = {
+      "web" = {
+        address_prefix    = "10.1.1.0/24"
+        service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"]
+      }
+      "app" = {
+        address_prefix    = "10.1.2.0/24"
+        service_endpoints = ["Microsoft.Storage", "Microsoft.Sql"]
+      }
+      "data" = {
+        address_prefix    = "10.1.3.0/24"
+        service_endpoints = ["Microsoft.Sql", "Microsoft.Storage"]
+      }
+    }
+  }
+  "development" = {
+    name          = "vnet-development"
+    address_space = ["10.2.0.0/16"]
+    subnets = {
+      "app" = {
+        address_prefix    = "10.2.1.0/24"
+        service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"]
+      }
+    }
+  }
+}
+
+# Gateway Configuration
+enable_azure_firewall = true
+enable_vpn_gateway    = false
+
+# Security Configuration
+log_retention_days         = 90
+enable_defender_for_cloud  = true
+
+# Tags
+tags = {
+  Project     = "Azure Landing Zone"
+  CostCenter  = "IT-Infrastructure"
+  Compliance  = "Required"
+  Owner       = "Platform Team"
+  Environment = "Development"
+}

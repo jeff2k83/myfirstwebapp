@@ -1,0 +1,7 @@
+# Backend Configuration for Terraform State
+# Copy this file to backend.tfvars and customize with your storage account details
+
+resource_group_name  = "rg-terraform-state"
+storage_account_name = "stterraformstate12345"
+container_name       = "tfstate"
+key                  = "landing-zone.tfstate"
