@@ -1,0 +1,273 @@
+{
+  "name": "Weekly Disciple Attendance Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 15 * * 3"
+            }
+          ]
+        }
+      },
+      "id": "node-1-schedule-trigger",
+      "name": "Every Wednesday 3pm",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1joor7kwrSVZbGxOkpzoXWivY0NXGSya9qUL9HvaD4IM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "SOR Leadership",
+          "mode": "name"
+        },
+        "options": {
+          "rangeDefinition": "detectAutomatically"
+        }
+      },
+      "id": "node-2-read-sor",
+      "name": "Read SOR Students",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        450,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1joor7kwrSVZbGxOkpzoXWivY0NXGSya9qUL9HvaD4IM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "DOR Leadership",
+          "mode": "name"
+        },
+        "options": {
+          "rangeDefinition": "detectAutomatically"
+        }
+      },
+      "id": "node-3-read-dor",
+      "name": "Read DOR Students",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        450,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "id": "node-4-merge",
+      "name": "Merge All Students",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate current week number\nconst now = new Date();\nconst startOfYear = new Date(now.getFullYear(), 0, 1);\nconst pastDaysOfYear = (now - startOfYear) / 86400000;\nconst weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);\n\n// Get current date info\nconst currentDate = now.toLocaleDateString('en-US', { \n  weekday: 'long', \n  year: 'numeric', \n  month: 'long', \n  day: 'numeric' \n});\n\n// Add week info to all items\nfor (const item of $input.all()) {\n  item.json.weekNumber = weekNumber;\n  item.json.currentDate = currentDate;\n  item.json.formLink = 'https://docs.google.com/forms/d/e/1FAIpQLSc8HRhAj7a1XvmFWQ_IXQjEO6iwLeyYjYL7MIa7nsn4Y99QRg/viewform';\n}\n\nreturn $input.all();"
+      },
+      "id": "node-5-calculate-week",
+      "name": "Calculate Current Week",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "node-6-split-batches",
+      "name": "Process One Student",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "📋 Weekly Attendance Reminder - Week {{ $json.weekNumber }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px; }\n    .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 5px; }\n    .button { display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px; }\n    .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h2>📋 Disciple Program - Weekly Attendance</h2>\n    </div>\n    <div class=\"content\">\n      <p>Dear {{ $json.Name }},</p>\n      \n      <p>This is your weekly reminder to submit your attendance for the Disciple Program.</p>\n      \n      <p><strong>Week Number:</strong> {{ $json.weekNumber }}<br>\n      <strong>Date:</strong> {{ $json.currentDate }}</p>\n      \n      <p>Please take a moment to fill out the attendance form:</p>\n      \n      <a href=\"{{ $json.formLink }}\" class=\"button\">Submit Attendance Form</a>\n      \n      <p style=\"margin-top: 20px;\">Thank you for your continued participation in the Disciple Program. Your commitment to growth and leadership is appreciated!</p>\n      \n      <p>Blessings,<br>\n      <strong>Disciple Program Team</strong></p>\n    </div>\n    <div class=\"footer\">\n      <p>This is an automated reminder sent every Wednesday at 3:00 PM</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "node-7-send-email",
+      "name": "Send Attendance Reminder",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "id": "node-8-wait",
+      "name": "Wait 1 Second",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        300
+      ],
+      "webhookId": "disciple-attendance-wait"
+    }
+  ],
+  "connections": {
+    "Every Wednesday 3pm": {
+      "main": [
+        [
+          {
+            "node": "Read SOR Students",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read DOR Students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read SOR Students": {
+      "main": [
+        [
+          {
+            "node": "Merge All Students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read DOR Students": {
+      "main": [
+        [
+          {
+            "node": "Merge All Students",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge All Students": {
+      "main": [
+        [
+          {
+            "node": "Calculate Current Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Current Week": {
+      "main": [
+        [
+          {
+            "node": "Process One Student",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process One Student": {
+      "main": [
+        [
+          {
+            "node": "Send Attendance Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Attendance Reminder": {
+      "main": [
+        [
+          {
+            "node": "Wait 1 Second",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 Second": {
+      "main": [
+        [
+          {
+            "node": "Process One Student",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-15T00:00:00.000Z",
+  "versionId": "1"
+}
